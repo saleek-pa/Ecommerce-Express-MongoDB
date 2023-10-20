@@ -9,7 +9,7 @@ router.use(express.json());
 router
     .post('/register', tryCatch(controller.register))
     .post('/login', tryCatch(controller.login))
-    .use(checkAuth)
+    .use(checkAuth(process.env.USER_ACCESS_TOKEN_SECRET))
 
     .get('/products', tryCatch(controller.getAllProducts))
     .get('/products/:id', tryCatch(controller.getProductById))
@@ -17,6 +17,7 @@ router
 
     .get('/:id/cart', tryCatch(controller.showCart))
     .post('/:id/cart', tryCatch(controller.addToCart))
+    .delete('/:id/cart', tryCatch(controller.deleteFromCart))
 
     .get('/:id/wishlists', tryCatch(controller.showWishlist))
     .post('/:id/wishlists', tryCatch(controller.addToWishlist))

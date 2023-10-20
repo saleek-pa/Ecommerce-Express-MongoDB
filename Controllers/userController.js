@@ -3,7 +3,7 @@ const Product = require('../Models/productSchema')
 const jwt = require('jsonwebtoken');
 
 module.exports = {
-    registration: async (req, res) => {
+    register: async (req, res) => {
         const { username, password } = req.body
         if (!username || !password) {
             return res.status(400).json({ message: "Fields 'username' and 'password' are required" });
@@ -56,8 +56,9 @@ module.exports = {
     },
 
     getProductsByCategory: async (req, res) => {
-        const category = req.query.category
-        const products = await Product.findById({ category })
+        const category = req.params.categoryname
+        console.log(category)
+        const products = await Product.find({ category })
         res.status(200).json({
             status: 'success',
             message: 'Successfully fetched products details.',
@@ -77,31 +78,81 @@ module.exports = {
         });
     },
 
-    // addToCart: async (req, res) => {
-    //     const id = req.params.id
-    //     const user = await User.findById(id);
-    //     if (!user) { return res.status(404).json({ message: 'User not found' }) }
-    //     const { product } = req.body
-    //     if (product) {
-    //         await User.updateOne({ _id: userId }, { $push: { cart: productId } });
-    //         return res.status(404).json({ message: 'Product not found' })
-    //     }
-    //     user.cart.push(product)
-    //     const productExists = Product.findOne();
+    addToCart: async (req, res) => {
+        const id = req.params.id
+        const user = await User.findById(id);
+        if (!user) { return res.status(404).json({ message: 'User not found' }) }
 
-    //     if (productExists) {
-    //         // The product exists in the list
-    //         // You can perform additional actions here
-    //         res.status(200).json({ message: 'Product exists in the list' });
-    //     } else {
-    //         // The product does not exist in the list
-    //         // You can handle this case accordingly
-    //         res.status(404).json({ message: 'Product not found in the list' });
-    //     }
-    // }
+        const { productId } = req.body
+        const product = await Product.findById(productId);
+        if (!product) { return res.status(404).json({ message: 'Product not found' }) }
 
+        await User.findByIdAndUpdate(id, { $push: { cart: product } });
+        res.status(200).json({
+            status: 'success',
+            message: 'Successfully added to cart'
+        });
+    },
 
-    // showWishlist
-    // addToWishlist
-    // deleteFromWishlist
+    deleteFromCart: async (req, res) => {
+        const id = req.params.id
+        const user = await User.findById(id);
+        if (!user) { return res.status(404).json({ message: 'User not found' }) }
+
+        const { productId } = req.body
+        const product = await Product.findById(productId);
+        // const inCart = user.cart.some(cartItem => cartItem === product);
+        // if (!inCart) { return res.status(404).json({ message: 'Product not in cart' }) }
+
+        await User.findByIdAndUpdate(id, { $pull: { cart: product } });
+        res.status(200).json({
+            status: 'success',
+            message: 'Successfully deleted from cart'
+        });
+    },
+
+    showWishlist: async (req, res) => {
+        const id = req.params.id
+        const user = await User.findById(id);
+        if (!user) { return res.status(404).json({ message: 'User not found' }) }
+        const cartItems = user.wishlist;
+        res.status(200).json({
+            status: 'success',
+            message: 'Successfully fetched wishlist.',
+            data: cartItems,
+        });
+    },
+
+    addToWishlist: async (req, res) => {
+        const id = req.params.id
+        const user = await User.findById(id);
+        if (!user) { return res.status(404).json({ message: 'User not found' }) }
+
+        const { productId } = req.body
+        const product = await Product.findById(productId);
+        if (!product) { return res.status(404).json({ message: 'Product not found' }) }
+
+        await User.findByIdAndUpdate(id, { $push: { wishlist: product } });
+        res.status(200).json({
+            status: 'success',
+            message: 'Successfully added to wishlist'
+        });
+    },
+
+    deleteFromWishlist: async (req, res) => {
+        const id = req.params.id
+        const user = await User.findById(id);
+        if (!user) { return res.status(404).json({ message: 'User not found' }) }
+
+        const { productId } = req.body
+        const product = await Product.findById(productId);
+        // const inWishlist = user.wishlist.some(wishlistItem => wishlistItem === product);
+        // if (!inWishlist) { return res.status(404).json({ message: 'Product not in wishlist' }) }
+
+        await User.findByIdAndUpdate(id, { $pull: { wishlist: product } });
+        res.status(200).json({
+            status: 'success',
+            message: 'Successfully deleted from wishlist'
+        });
+    }
 }
