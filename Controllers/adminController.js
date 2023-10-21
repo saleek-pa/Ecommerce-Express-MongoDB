@@ -52,7 +52,7 @@ module.exports = {
         }
         res.status(200).json({
             status: 'success',
-            message: 'Successfully fetched products detail.',
+            message: 'Successfully fetched products details.',
             data: products
         })
     },
@@ -72,22 +72,22 @@ module.exports = {
     },
 
     getProductsByCategory: async (req, res) => {
+        // products/category?name=men
         const categoryName = req.query.name
         console.log(categoryName)
         const products = await Product.find({ category: categoryName })
         res.status(200).json({
             status: 'success',
-            message: 'Successfully fetched products details.',
+            message: 'Successfully fetched products details by category.',
             data: products
         })
     },
 
     createProduct: async (req, res) => {
-        // const id = Date.now()
         const { title, description, image, price } = req.body
-        // if (!title && !description && !image && !price) {
-        //     return res.status(400).json({ message: "Fields 'title', 'description', 'image' and 'price' are required" });
-        // }
+        if (!title && !description && !image && !price) {
+            return res.status(400).json({ message: "Fields 'title', 'description', 'image' and 'price' are required" });
+        }
         await Product.create({ title, description, image, price })
         res.status(201).json({
             status: 'success',
@@ -96,8 +96,7 @@ module.exports = {
     },
 
     updateProduct: async (req, res) => {
-        const id = req.params.id
-        const { title, description, image, price } = req.body;
+        const { title, description, image, price, id } = req.body;
         const product = await Product.findByIdAndUpdate(id, {
             $set: { title, description, image, price }
         })

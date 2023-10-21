@@ -22,5 +22,9 @@ router
     .get('/:id/wishlists', tryCatch(controller.showWishlist))
     .post('/:id/wishlists', tryCatch(controller.addToWishlist))
     .delete('/:id/wishlists', tryCatch(controller.deleteFromWishlist))
+    
+    .post('/:id/payment', tryCatch(controller.payment))
+    .get('/:id/success', tryCatch(controller.success))
+    .post('/:id/cancel', tryCatch(controller.cancel))
 
 module.exports = router;

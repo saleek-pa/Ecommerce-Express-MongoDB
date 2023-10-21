@@ -1,6 +1,7 @@
 const User = require('../Models/userSchema')
 const Product = require('../Models/productSchema')
 const jwt = require('jsonwebtoken');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 module.exports = {
     register: async (req, res) => {
@@ -42,8 +43,8 @@ module.exports = {
     },
 
     getProductById: async (req, res) => {
-        const id = req.params.id
-        const product = await Product.findById(id)
+        const productID = req.params.id
+        const product = await Product.findById(productID)
         if (!product) {
             return res.status(404).json({ message: "Product not found" })
         }
@@ -67,8 +68,8 @@ module.exports = {
     },
 
     showCart: async (req, res) => {
-        const id = req.params.id
-        const user = await User.findById(id);
+        const userID = req.params.id
+        const user = await User.findById(userID);
         if (!user) { return res.status(404).json({ message: 'User not found' }) }
         const cartItems = user.cart;
         res.status(200).json({
@@ -79,15 +80,15 @@ module.exports = {
     },
 
     addToCart: async (req, res) => {
-        const id = req.params.id
-        const user = await User.findById(id);
+        const userID = req.params.id
+        const user = await User.findById(userID);
         if (!user) { return res.status(404).json({ message: 'User not found' }) }
 
-        const { productId } = req.body
-        const product = await Product.findById(productId);
+        const { productID } = req.body
+        const product = await Product.findById(productID);
         if (!product) { return res.status(404).json({ message: 'Product not found' }) }
 
-        await User.findByIdAndUpdate(id, { $push: { cart: product } });
+        await User.findByIdAndUpdate(userID, { $push: { cart: product } });
         res.status(200).json({
             status: 'success',
             message: 'Successfully added to cart'
@@ -95,8 +96,8 @@ module.exports = {
     },
 
     deleteFromCart: async (req, res) => {
-        const id = req.params.id
-        const user = await User.findById(id);
+        const userID = req.params.id
+        const user = await User.findById(userID);
         if (!user) { return res.status(404).json({ message: 'User not found' }) }
 
         const { productId } = req.body
@@ -104,7 +105,7 @@ module.exports = {
         // const inCart = user.cart.some(cartItem => cartItem === product);
         // if (!inCart) { return res.status(404).json({ message: 'Product not in cart' }) }
 
-        await User.findByIdAndUpdate(id, { $pull: { cart: product } });
+        await User.findByIdAndUpdate(userID, { $pull: { cart: product } });
         res.status(200).json({
             status: 'success',
             message: 'Successfully deleted from cart'
@@ -112,8 +113,8 @@ module.exports = {
     },
 
     showWishlist: async (req, res) => {
-        const id = req.params.id
-        const user = await User.findById(id);
+        const userID = req.params.id
+        const user = await User.findById(userID);
         if (!user) { return res.status(404).json({ message: 'User not found' }) }
         const cartItems = user.wishlist;
         res.status(200).json({
@@ -124,15 +125,15 @@ module.exports = {
     },
 
     addToWishlist: async (req, res) => {
-        const id = req.params.id
-        const user = await User.findById(id);
+        const userID = req.params.id
+        const user = await User.findById(userID);
         if (!user) { return res.status(404).json({ message: 'User not found' }) }
 
         const { productId } = req.body
         const product = await Product.findById(productId);
         if (!product) { return res.status(404).json({ message: 'Product not found' }) }
 
-        await User.findByIdAndUpdate(id, { $push: { wishlist: product } });
+        await User.findByIdAndUpdate(userID, { $push: { wishlist: product } });
         res.status(200).json({
             status: 'success',
             message: 'Successfully added to wishlist'
@@ -140,8 +141,8 @@ module.exports = {
     },
 
     deleteFromWishlist: async (req, res) => {
-        const id = req.params.id
-        const user = await User.findById(id);
+        const userID = req.params.id
+        const user = await User.findById(userID);
         if (!user) { return res.status(404).json({ message: 'User not found' }) }
 
         const { productId } = req.body
@@ -149,10 +150,32 @@ module.exports = {
         // const inWishlist = user.wishlist.some(wishlistItem => wishlistItem === product);
         // if (!inWishlist) { return res.status(404).json({ message: 'Product not in wishlist' }) }
 
-        await User.findByIdAndUpdate(id, { $pull: { wishlist: product } });
+        await User.findByIdAndUpdate(userID, { $pull: { wishlist: product } });
         res.status(200).json({
             status: 'success',
             message: 'Successfully deleted from wishlist'
         });
+    },
+
+    payment: async (req, res) => {
+        const session = await stripe.checkout.sessions.create({
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'inr',
+                        product_data: {
+                            name: 'Product Name',
+                        },
+                        unit_amount: 1000,
+                    },
+                    quantity: 1,
+                },
+            ],
+            mode: 'payment',
+            success_url: 'https://yourwebsite.com/success',
+            cancel_url: 'https://yourwebsite.com/cancel',
+        });
+
+        // res.redirect(session.url);
     }
 }

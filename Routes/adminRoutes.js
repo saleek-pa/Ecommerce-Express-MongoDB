@@ -13,12 +13,12 @@ router
     .get('/users', tryCatch(controller.getAllUsers))
     .get('/users/:id', tryCatch(controller.getUserById))
 
+    .get('/products/category', tryCatch(controller.getProductsByCategory))
     .get('/products', tryCatch(controller.getAllProducts))
     .get('/products/:id', tryCatch(controller.getProductById))
-    .get('/products/category', tryCatch(controller.getProductsByCategory))
     .post('/products', tryCatch(controller.createProduct))
-    .put('/products', tryCatch(controller.updateProduct))
-    .delete('/products', tryCatch(controller.deleteProduct))
+    .put('/products/:id', tryCatch(controller.updateProduct))
+    .delete('/products/:id', tryCatch(controller.deleteProduct))
 
     .get('/stats', tryCatch(controller.getStats))
     .get('/orders', tryCatch(controller.getOrders))
