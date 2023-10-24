@@ -111,7 +111,7 @@ module.exports = {
     },
 
     deleteProduct: async (req, res) => {
-        const id = req.params.id
+        const { id } = req.body
         const product = await Product.findByIdAndRemove(id)
         if (product) {
             res.json({

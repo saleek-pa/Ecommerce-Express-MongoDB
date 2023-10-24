@@ -1,6 +1,7 @@
 const User = require('../Models/userSchema')
 const Product = require('../Models/productSchema')
 const jwt = require('jsonwebtoken');
+const { json } = require('express');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 module.exports = {
@@ -69,9 +70,12 @@ module.exports = {
 
     showCart: async (req, res) => {
         const userID = req.params.id
-        const user = await User.findById(userID);
+        const user = await User.findById(userID).populate('cart');
         if (!user) { return res.status(404).json({ message: 'User not found' }) }
+
         const cartItems = user.cart;
+        if (cartItems.length === 0) { return res.status(404).json({ message: 'Cart is empty' }) }
+
         res.status(200).json({
             status: 'success',
             message: 'Successfully fetched cart items.',
@@ -88,7 +92,10 @@ module.exports = {
         const product = await Product.findById(productID);
         if (!product) { return res.status(404).json({ message: 'Product not found' }) }
 
-        await User.findByIdAndUpdate(userID, { $push: { cart: product } });
+        const productExist = await User.findOne({ _id: userID, cart: productID })
+        if (productExist) { return res.status(404).json({ message: 'Product already in cart' }) }
+
+        await User.findByIdAndUpdate(userID, { $push: { cart: productID } });
         res.status(200).json({
             status: 'success',
             message: 'Successfully added to cart'
@@ -97,26 +104,26 @@ module.exports = {
 
     deleteFromCart: async (req, res) => {
         const userID = req.params.id
+        const { productID } = req.body
+
         const user = await User.findById(userID);
         if (!user) { return res.status(404).json({ message: 'User not found' }) }
 
-        const { productId } = req.body
-        const product = await Product.findById(productId);
-        // const inCart = user.cart.some(cartItem => cartItem === product);
-        // if (!inCart) { return res.status(404).json({ message: 'Product not in cart' }) }
-
-        await User.findByIdAndUpdate(userID, { $pull: { cart: product } });
+        await User.findByIdAndUpdate(userID, { $pull: { cart: productID } });
         res.status(200).json({
             status: 'success',
-            message: 'Successfully deleted from cart'
+            message: 'Successfully removed from cart'
         });
     },
 
     showWishlist: async (req, res) => {
         const userID = req.params.id
-        const user = await User.findById(userID);
+        const user = await User.findById(userID).populate('wishlist');
         if (!user) { return res.status(404).json({ message: 'User not found' }) }
-        const cartItems = user.wishlist;
+
+        const wishlistItems = user.wishlist;
+        if (wishlistItems.length === 0) { return res.status(404).json({ message: 'Wishlist is empty' }) }
+
         res.status(200).json({
             status: 'success',
             message: 'Successfully fetched wishlist.',
@@ -129,11 +136,14 @@ module.exports = {
         const user = await User.findById(userID);
         if (!user) { return res.status(404).json({ message: 'User not found' }) }
 
-        const { productId } = req.body
-        const product = await Product.findById(productId);
+        const { productID } = req.body
+        const product = await Product.findById(productID);
         if (!product) { return res.status(404).json({ message: 'Product not found' }) }
 
-        await User.findByIdAndUpdate(userID, { $push: { wishlist: product } });
+        const productExist = await User.findOne({ _id: userID, wishlist: productID })
+        if (productExist) { return res.status(404).json({ message: 'Product already in wishlist' }) }
+
+        await User.findByIdAndUpdate(userID, { $push: { wishlist: productID } });
         res.status(200).json({
             status: 'success',
             message: 'Successfully added to wishlist'
@@ -142,40 +152,70 @@ module.exports = {
 
     deleteFromWishlist: async (req, res) => {
         const userID = req.params.id
+        const { productID } = req.body
+
         const user = await User.findById(userID);
         if (!user) { return res.status(404).json({ message: 'User not found' }) }
 
-        const { productId } = req.body
-        const product = await Product.findById(productId);
-        // const inWishlist = user.wishlist.some(wishlistItem => wishlistItem === product);
-        // if (!inWishlist) { return res.status(404).json({ message: 'Product not in wishlist' }) }
-
-        await User.findByIdAndUpdate(userID, { $pull: { wishlist: product } });
+        await User.findByIdAndUpdate(userID, { $pull: { wishlist: productID } });
         res.status(200).json({
             status: 'success',
-            message: 'Successfully deleted from wishlist'
+            message: 'Successfully removed from wishlist'
         });
     },
 
     payment: async (req, res) => {
-        const session = await stripe.checkout.sessions.create({
-            line_items: [
-                {
-                    price_data: {
-                        currency: 'inr',
-                        product_data: {
-                            name: 'Product Name',
-                        },
-                        unit_amount: 1000,
+        const userID = req.params.id;
+        const user = await User.findById(userID).populate('cart');
+        if (!user) { return res.status(404).json({ message: 'User not found' }) }
+
+        if (user.cart.length === 0) {
+            return res.status(404).json({ message: 'Cart is empty' })
+        }
+
+        const line_items = user.cart.map(product => {
+            return {
+                price_data: {
+                    currency: 'inr',
+                    product_data: {
+                        name: product.title,
+                        description: product.description
                     },
-                    quantity: 1,
+                    unit_amount: Math.round(product.price * 100),
                 },
-            ],
+                quantity: 1,
+            };
+        })
+
+        const session = await stripe.checkout.sessions.create({
+            line_items,
             mode: 'payment',
-            success_url: 'https://yourwebsite.com/success',
-            cancel_url: 'https://yourwebsite.com/cancel',
+            success_url: 'http://127.0.0.1:8000/api/users/payment/success',
+            cancel_url: 'http://127.0.0.1:8000/api/users/payment/cancel',
         });
 
-        // res.redirect(session.url);
+        // user.cart = [];
+        // await user.save();
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Stripe Checkout session created',
+            sessionId: session.id,
+            url: session.url
+        })
+    },
+
+    success: async (req, res) => {
+        res.status(200).json({
+            status: 'success',
+            message: 'hello',
+        });
+    },
+
+    cancel: async (req, res) => {
+        res.json({
+            status: 'failure',
+            message: 'helloooooo',
+        });
     }
 }

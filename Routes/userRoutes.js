@@ -19,9 +19,9 @@ router
     .post('/:id/cart', tryCatch(controller.addToCart))
     .delete('/:id/cart', tryCatch(controller.deleteFromCart))
 
-    .get('/:id/wishlists', tryCatch(controller.showWishlist))
-    .post('/:id/wishlists', tryCatch(controller.addToWishlist))
-    .delete('/:id/wishlists', tryCatch(controller.deleteFromWishlist))
+    .get('/:id/wishlist', tryCatch(controller.showWishlist))
+    .post('/:id/wishlist', tryCatch(controller.addToWishlist))
+    .delete('/:id/wishlist', tryCatch(controller.deleteFromWishlist))
     
     .post('/:id/payment', tryCatch(controller.payment))
     .get('/:id/success', tryCatch(controller.success))
