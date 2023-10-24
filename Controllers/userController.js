@@ -1,7 +1,7 @@
 const User = require('../Models/userSchema')
 const Product = require('../Models/productSchema')
+const Order = require('../Models/orderSchema')
 const jwt = require('jsonwebtoken');
-const { json } = require('express');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 module.exports = {
@@ -190,12 +190,18 @@ module.exports = {
         const session = await stripe.checkout.sessions.create({
             line_items,
             mode: 'payment',
-            success_url: 'http://127.0.0.1:8000/api/users/payment/success',
-            cancel_url: 'http://127.0.0.1:8000/api/users/payment/cancel',
+            success_url: 'http://127.0.0.1:3000/api/users/payment/success',
+            cancel_url: 'http://127.0.0.1:3000/api/users/payment/cancel',
         });
 
-        // user.cart = [];
-        // await user.save();
+        storedUserID = userID;
+
+        await Order.create({
+            products: user.cart.map(product => product._id),
+            order_id: Date.now(),
+            payment_id: session.id,
+        });
+
 
         res.status(200).json({
             status: 'success',
@@ -206,16 +212,23 @@ module.exports = {
     },
 
     success: async (req, res) => {
+        const userID = storedUserID;
+        const user = await User.findById(userID);
+        if (!user) { return res.status(404).json({ message: 'User not found' }) }
+
+        user.cart = [];
+        await user.save();
+
         res.status(200).json({
             status: 'success',
-            message: 'hello',
+            message: 'Payment was successful',
         });
     },
 
     cancel: async (req, res) => {
-        res.json({
+        res.status(200).json({
             status: 'failure',
-            message: 'helloooooo',
+            message: 'Payment was cancelled',
         });
     }
 }
