@@ -9,6 +9,10 @@ router.use(express.json());
 router
     .post('/register', tryCatch(controller.register))
     .post('/login', tryCatch(controller.login))
+
+    .get('/payment/success', tryCatch(controller.success))
+    .post('/payment/cancel', tryCatch(controller.cancel))
+
     .use(checkAuth(process.env.USER_ACCESS_TOKEN_SECRET))
 
     .get('/products', tryCatch(controller.getAllProducts))
@@ -22,9 +26,8 @@ router
     .get('/:id/wishlist', tryCatch(controller.showWishlist))
     .post('/:id/wishlist', tryCatch(controller.addToWishlist))
     .delete('/:id/wishlist', tryCatch(controller.deleteFromWishlist))
-    
+
     .post('/:id/payment', tryCatch(controller.payment))
-    .get('/payment/success', tryCatch(controller.success))
-    .post('/payment/cancel', tryCatch(controller.cancel))
+    .get('/:id/orders', tryCatch(controller.showOrders))
 
 module.exports = router;

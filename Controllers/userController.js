@@ -2,7 +2,9 @@ const User = require('../Models/userSchema')
 const Product = require('../Models/productSchema')
 const Order = require('../Models/orderSchema')
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+let orderDetails = {};
 
 module.exports = {
     register: async (req, res) => {
@@ -13,7 +15,7 @@ module.exports = {
         await User.create({ username, password });
         res.json({
             status: 'success',
-            message: "Admin account registered successfully"
+            message: "registered successfully"
         })
     },
 
@@ -194,14 +196,16 @@ module.exports = {
             cancel_url: 'http://127.0.0.1:3000/api/users/payment/cancel',
         });
 
-        storedUserID = userID;
-
-        await Order.create({
-            products: user.cart.map(product => product._id),
-            order_id: Date.now(),
-            payment_id: session.id,
-        });
-
+        orderDetails = {
+            userID,
+            user,
+            newOrder: {
+                products: user.cart.map(product => new mongoose.Types.ObjectId(product._id)),
+                order_id: Date.now(),
+                payment_id: session.id,
+                total_amount: session.amount_total / 100
+            }
+        };
 
         res.status(200).json({
             status: 'success',
@@ -212,16 +216,16 @@ module.exports = {
     },
 
     success: async (req, res) => {
-        const userID = storedUserID;
-        const user = await User.findById(userID);
-        if (!user) { return res.status(404).json({ message: 'User not found' }) }
+        const { userID, user, newOrder } = orderDetails;
+        const order = await Order.create({ ...newOrder })
+        await User.findByIdAndUpdate(userID, { $push: { orders: order._id } });
 
         user.cart = [];
         await user.save();
 
         res.status(200).json({
             status: 'success',
-            message: 'Payment was successful',
+            message: 'Payment was successful'
         });
     },
 
@@ -229,6 +233,23 @@ module.exports = {
         res.status(200).json({
             status: 'failure',
             message: 'Payment was cancelled',
+        });
+    },
+
+    showOrders: async (req, res) => {
+        const userID = req.params.id
+        const user = await User.findById(userID).populate('orders');
+        if (!user) { return res.status(404).json({ message: 'User not found' }) }
+
+        const userOrders = user.orders;
+        if (userOrders.length === 0) { return res.status(404).json({ message: 'You have no orders' }) }
+
+        const orderDetails = await Order.find({ _id: { $in: userOrders } }).populate('products');
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Successfully fetched order details.',
+            data: orderDetails,
         });
     }
 }

@@ -74,7 +74,6 @@ module.exports = {
     getProductsByCategory: async (req, res) => {
         // products/category?name=men
         const categoryName = req.query.name
-        console.log(categoryName)
         const products = await Product.find({ category: categoryName })
         res.status(200).json({
             status: 'success',
