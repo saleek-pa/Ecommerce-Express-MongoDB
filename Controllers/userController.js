@@ -3,6 +3,7 @@ const Product = require('../Models/productSchema')
 const Order = require('../Models/orderSchema')
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 let orderDetails = {};
 
@@ -12,7 +13,8 @@ module.exports = {
         if (!username || !password) {
             return res.status(400).json({ message: "Fields 'username' and 'password' are required" });
         }
-        await User.create({ username, password });
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await User.create({ username, password: hashedPassword });
         res.json({
             status: 'success',
             message: "registered successfully"
@@ -21,16 +23,19 @@ module.exports = {
 
     login: async (req, res) => {
         const { username, password } = req.body
-        const user = await User.findOne({ username, password });
+        const user = await User.findOne({ username });
         if (user) {
-            const token = jwt.sign({ username },
-                process.env.USER_ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
-            res.status(200).json({
-                status: 'success',
-                message: 'Successfully Logged In.',
-                data: { jwt_token: token }
-            })
-        } else res.status(401).json({ message: 'Authentication failed' });
+            const passwordMatch = await bcrypt.compare(password, user.password);
+            if (passwordMatch) {
+                const token = jwt.sign({ username },
+                    process.env.USER_ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+                res.status(200).json({
+                    status: 'success',
+                    message: 'Successfully Logged In.',
+                    data: { jwt_token: token }
+                })
+            } else res.status(401).json({ message: 'Incorrect Password' })
+        } else res.status(401).json({ message: 'User not found' });
     },
 
     getAllProducts: async (req, res) => {
