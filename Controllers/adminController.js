@@ -1,5 +1,6 @@
 const User = require('../Models/userSchema')
 const Product = require('../Models/productSchema')
+const Order = require('../Models/orderSchema')
 const jwt = require('jsonwebtoken');
 
 module.exports = {
@@ -83,11 +84,11 @@ module.exports = {
     },
 
     createProduct: async (req, res) => {
-        const { title, description, image, price } = req.body
-        if (!title && !description && !image && !price) {
-            return res.status(400).json({ message: "Fields 'title', 'description', 'image' and 'price' are required" });
+        const { title, description, image, price, category } = req.body
+        if (!title || !description || !image || !price || !category) {
+            return res.status(400).json({ message: "Fields 'title', 'description', 'image', 'category' and 'price' are required" });
         }
-        await Product.create({ title, description, image, price })
+        await Product.create({ title, description, image, price, category })
         res.status(201).json({
             status: 'success',
             message: 'Successfully created a product.',
@@ -123,24 +124,35 @@ module.exports = {
         }
     },
 
+    getOrders: async (req, res) => {
+        const orders = await Order.find()
+
+        if (orders.length == 0) {
+            return res.json({ message: "No Orders" })
+        }
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Successfully fetched order details.',
+            data: orders
+        })
+    },
+
     getStats: async (req, res) => {
-        const products = await Product.find();
-        // const totalProductsSold = products.reduce((total, product) => total + product.sold, 0);
-        // const totalRevenue = products.reduce((total, product) => total + product.price * product.sold, 0);
-        const stats = { totalProductsSold, totalRevenue }
+        const stats = await Order.aggregate([{
+            $group: {
+                _id: null,
+                totalProductsSold: { $sum: { $size: "$products" } },
+                totalRevenue: { $sum: { $toDouble: "$total_amount" } }
+            }
+        },
+        { $project: { _id: 0 } }
+        ])
+
         res.json({
             status: 'success',
             message: 'Successfully fetched stats.',
             data: stats
-        })
-    },
-
-    getOrders: async (req, res) => {
-        const orderDetails = null
-        res.json({
-            status: 'success',
-            message: 'Successfully fetched order details.',
-            data: orderDetails
         })
     }
 }
