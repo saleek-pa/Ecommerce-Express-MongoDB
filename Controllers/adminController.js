@@ -1,5 +1,5 @@
 const User = require('../Models/userSchema')
-const Product = require('../Models/productSchema')
+const { Product, productValidationSchema } = require('../Models/productSchema')
 const Order = require('../Models/orderSchema')
 const jwt = require('jsonwebtoken');
 
@@ -84,10 +84,10 @@ module.exports = {
     },
 
     createProduct: async (req, res) => {
-        const { title, description, image, price, category } = req.body
-        if (!title || !description || !image || !price || !category) {
-            return res.status(400).json({ message: "Fields 'title', 'description', 'image', 'category' and 'price' are required" });
-        }
+        const { error, value } = productValidationSchema.validate(req.body);
+        if (error) { return res.status(400).json({ message: error.details[0].message }) }
+        const { title, description, image, price, category } = value
+
         await Product.create({ title, description, image, price, category })
         res.status(201).json({
             status: 'success',
@@ -96,9 +96,12 @@ module.exports = {
     },
 
     updateProduct: async (req, res) => {
-        const { title, description, image, price, id } = req.body;
+        const { error, value } = productValidationSchema.validate(req.body);
+        if (error) { return res.status(400).json({ message: error.details[0].message }) }
+        const { title, description, image, price, category, id } = value
+
         const product = await Product.findByIdAndUpdate(id, {
-            $set: { title, description, image, price }
+            $set: { title, description, image, price, category }
         })
         if (product) {
             res.json({

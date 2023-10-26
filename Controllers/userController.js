@@ -1,5 +1,5 @@
-const User = require('../Models/userSchema')
-const Product = require('../Models/productSchema')
+const { User, userRegisterSchema, userLoginSchema } = require('../Models/userSchema')
+const { Product } = require('../Models/productSchema')
 const Order = require('../Models/orderSchema')
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
@@ -9,12 +9,13 @@ let orderDetails = {};
 
 module.exports = {
     register: async (req, res) => {
-        const { username, password } = req.body
-        if (!username || !password) {
-            return res.status(400).json({ message: "Fields 'username' and 'password' are required" });
-        }
+        const { error, value } = userRegisterSchema.validate(req.body);
+        if (error) { return res.status(400).json({ message: error.details[0].message }) }
+        const { name, username, email, password } = value
+
         const hashedPassword = await bcrypt.hash(password, 10);
-        await User.create({ username, password: hashedPassword });
+        await User.create({ name, username, email, password: hashedPassword });
+
         res.json({
             status: 'success',
             message: "registered successfully"
@@ -22,12 +23,15 @@ module.exports = {
     },
 
     login: async (req, res) => {
-        const { username, password } = req.body
-        const user = await User.findOne({ username });
+        const { error, value } = userLoginSchema.validate(req.body);
+        if (error) { return res.status(400).json({ message: error.details[0].message }) }
+        const { email, password } = value
+
+        const user = await User.findOne({ email });
         if (user) {
             const passwordMatch = await bcrypt.compare(password, user.password);
             if (passwordMatch) {
-                const token = jwt.sign({ username },
+                const token = jwt.sign({ email },
                     process.env.USER_ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
                 res.status(200).json({
                     status: 'success',
