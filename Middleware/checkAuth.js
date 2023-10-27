@@ -7,11 +7,10 @@ const checkAuth = (accessTokenSecret) => {
       if (!token) {
         res.status(401).json({ message: 'Unauthorized' });
       } else {
-        jwt.verify(token, accessTokenSecret, (err, decoded) => {
+        jwt.verify(token, accessTokenSecret, (err) => {
           if (err) {
             res.status(401).json({ message: 'Authentication failed' });
           } else {
-            req.username = decoded.username;
             next();
           }
         });

@@ -70,7 +70,6 @@ module.exports = {
 
     getProductsByCategory: async (req, res) => {
         const category = req.params.categoryname
-        console.log(category)
         const products = await Product.find({ category })
         res.status(200).json({
             status: 'success',
@@ -138,7 +137,7 @@ module.exports = {
         res.status(200).json({
             status: 'success',
             message: 'Successfully fetched wishlist.',
-            data: cartItems,
+            data: wishlistItems,
         });
     },
 

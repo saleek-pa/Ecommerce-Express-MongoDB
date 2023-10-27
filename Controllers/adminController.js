@@ -1,4 +1,4 @@
-const User = require('../Models/userSchema')
+const { User } = require('../Models/userSchema')
 const { Product, productValidationSchema } = require('../Models/productSchema')
 const Order = require('../Models/orderSchema')
 const jwt = require('jsonwebtoken');
