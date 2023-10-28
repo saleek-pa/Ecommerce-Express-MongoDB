@@ -4,8 +4,6 @@ const controller = require('../Controllers/adminController');
 const tryCatch = require('../Middleware/tryCatch');
 const checkAuth = require('../Middleware/checkAuth');
 
-router.use(express.json());
-
 router
     .post('/login', tryCatch(controller.login))
     .use(checkAuth(process.env.ADMIN_ACCESS_TOKEN_SECRET))

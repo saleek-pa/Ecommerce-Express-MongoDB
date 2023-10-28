@@ -4,8 +4,6 @@ const controller = require('../Controllers/userController');
 const tryCatch = require('../Middleware/tryCatch');
 const checkAuth = require('../Middleware/checkAuth');
 
-router.use(express.json());
-
 router
     .post('/register', tryCatch(controller.register))
     .post('/login', tryCatch(controller.login))

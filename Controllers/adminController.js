@@ -20,6 +20,8 @@ module.exports = {
         }
     },
 
+
+
     getAllUsers: async (req, res) => {
         const users = await User.find()
         if (users.length == 0) {
@@ -31,6 +33,8 @@ module.exports = {
             data: users
         })
     },
+
+
 
     getUserById: async (req, res) => {
         const id = req.params.id
@@ -46,6 +50,8 @@ module.exports = {
 
     },
 
+
+
     getAllProducts: async (req, res) => {
         const products = await Product.find()
         if (products.length == 0) {
@@ -57,6 +63,8 @@ module.exports = {
             data: products
         })
     },
+
+
 
     getProductById: async (req, res) => {
         const id = req.params.id
@@ -72,6 +80,8 @@ module.exports = {
 
     },
 
+
+
     getProductsByCategory: async (req, res) => {
         // products/category?name=men
         const categoryName = req.query.name
@@ -82,6 +92,8 @@ module.exports = {
             data: products
         })
     },
+
+
 
     createProduct: async (req, res) => {
         const { error, value } = productValidationSchema.validate(req.body);
@@ -94,6 +106,8 @@ module.exports = {
             message: 'Successfully created a product.',
         })
     },
+
+
 
     updateProduct: async (req, res) => {
         const { error, value } = productValidationSchema.validate(req.body);
@@ -113,6 +127,8 @@ module.exports = {
         }
     },
 
+
+
     deleteProduct: async (req, res) => {
         const { id } = req.body
         const product = await Product.findByIdAndRemove(id)
@@ -127,6 +143,8 @@ module.exports = {
         }
     },
 
+
+
     getOrders: async (req, res) => {
         const orders = await Order.find()
 
@@ -140,6 +158,8 @@ module.exports = {
             data: orders
         })
     },
+
+    
 
     getStats: async (req, res) => {
         const stats = await Order.aggregate([{

@@ -22,6 +22,8 @@ module.exports = {
         })
     },
 
+
+
     login: async (req, res) => {
         const { error, value } = userLoginSchema.validate(req.body);
         if (error) { return res.status(400).json({ message: error.details[0].message }) }
@@ -42,6 +44,8 @@ module.exports = {
         } else res.status(401).json({ message: 'User not found' });
     },
 
+
+
     getAllProducts: async (req, res) => {
         const products = await Product.find()
         if (products.length == 0) {
@@ -53,6 +57,8 @@ module.exports = {
             data: products
         })
     },
+
+
 
     getProductById: async (req, res) => {
         const productID = req.params.id
@@ -68,6 +74,8 @@ module.exports = {
 
     },
 
+
+
     getProductsByCategory: async (req, res) => {
         const category = req.params.categoryname
         const products = await Product.find({ category })
@@ -77,6 +85,8 @@ module.exports = {
             data: products
         })
     },
+
+
 
     showCart: async (req, res) => {
         const userID = req.params.id
@@ -93,6 +103,8 @@ module.exports = {
         });
     },
 
+
+
     addToCart: async (req, res) => {
         const userID = req.params.id
         const user = await User.findById(userID);
@@ -101,16 +113,17 @@ module.exports = {
         const { productID } = req.body
         const product = await Product.findById(productID);
         if (!product) { return res.status(404).json({ message: 'Product not found' }) }
+        
+        const updatedUser = await User.findByIdAndUpdate(userID, { $addToSet: { cart: productID } });
+        if (!updatedUser) { return res.status(404).json({ message: 'Product already in cart' }) }
 
-        const productExist = await User.findOne({ _id: userID, cart: productID })
-        if (productExist) { return res.status(404).json({ message: 'Product already in cart' }) }
-
-        await User.findByIdAndUpdate(userID, { $push: { cart: productID } });
         res.status(200).json({
             status: 'success',
             message: 'Successfully added to cart'
         });
     },
+
+
 
     deleteFromCart: async (req, res) => {
         const userID = req.params.id
@@ -125,6 +138,8 @@ module.exports = {
             message: 'Successfully removed from cart'
         });
     },
+
+
 
     showWishlist: async (req, res) => {
         const userID = req.params.id
@@ -141,6 +156,8 @@ module.exports = {
         });
     },
 
+
+
     addToWishlist: async (req, res) => {
         const userID = req.params.id
         const user = await User.findById(userID);
@@ -150,15 +167,16 @@ module.exports = {
         const product = await Product.findById(productID);
         if (!product) { return res.status(404).json({ message: 'Product not found' }) }
 
-        const productExist = await User.findOne({ _id: userID, wishlist: productID })
-        if (productExist) { return res.status(404).json({ message: 'Product already in wishlist' }) }
-
-        await User.findByIdAndUpdate(userID, { $push: { wishlist: productID } });
+        const updatedUser = await User.findByIdAndUpdate(userID, { $addToSet: { wishlist: productID } });
+        if (!updatedUser) { return res.status(404).json({ message: 'Product already in wishlist' }) }
+        
         res.status(200).json({
             status: 'success',
             message: 'Successfully added to wishlist'
         });
     },
+
+
 
     deleteFromWishlist: async (req, res) => {
         const userID = req.params.id
@@ -173,6 +191,8 @@ module.exports = {
             message: 'Successfully removed from wishlist'
         });
     },
+
+
 
     payment: async (req, res) => {
         const userID = req.params.id;
@@ -223,6 +243,8 @@ module.exports = {
         })
     },
 
+
+
     success: async (req, res) => {
         const { userID, user, newOrder } = orderDetails;
         const order = await Order.create({ ...newOrder })
@@ -237,12 +259,16 @@ module.exports = {
         });
     },
 
+
+
     cancel: async (req, res) => {
         res.status(200).json({
             status: 'failure',
             message: 'Payment was cancelled',
         });
     },
+
+
 
     showOrders: async (req, res) => {
         const userID = req.params.id
